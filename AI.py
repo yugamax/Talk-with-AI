@@ -89,14 +89,8 @@ async def websocket_endpoint(websocket: WebSocket):
                 audio_data = b""
                 for chunk in response.iter_bytes():
                     audio_data += chunk
-                #await websocket.send_bytes(audio_data)
-
-                audio_base64 = base64.b64encode(audio_data).decode('utf-8')
-
-                await websocket.send_json({
-                    "text": res,
-                    "audio": audio_base64
-                })
+                
+                await websocket.send_bytes(audio_data)
                           
             except Exception as e:
                 await websocket.send_text(f"Error: {str(e)}")
