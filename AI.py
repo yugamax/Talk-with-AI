@@ -3,13 +3,16 @@ import tempfile
 from fastapi import FastAPI, WebSocket, WebSocketDisconnect
 from fastapi.middleware.cors import CORSMiddleware
 from groq import Groq
-import base64
+import uvicorn
 from dotenv import load_dotenv
 
 load_dotenv()
-client = Groq(api_key=os.getenv("gr_api_key1"))
+client1 = Groq(api_key=os.getenv("gr_api_key1"))
 client2 = Groq(api_key=os.getenv("gr_api_key2"))
 client3 = Groq(api_key=os.getenv("gr_api_key3"))
+client4 = Groq(api_key=os.getenv("gr_api_key4"))
+client5 = Groq(api_key=os.getenv("gr_api_key5"))
+client6 = Groq(api_key=os.getenv("gr_api_key6"))
 
 app = FastAPI()
 
@@ -38,7 +41,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 temp_audio_path = temp_audio.name
 
             with open(temp_audio_path, "rb") as file:
-                transcription = client.audio.transcriptions.create(
+                transcription = client1.audio.transcriptions.create(
                     file=(temp_audio_path, file.read()),
                     model="whisper-large-v3-turbo",
                     response_format="verbose_json",
@@ -48,7 +51,7 @@ async def websocket_endpoint(websocket: WebSocket):
             chat_hist.append({"role": "user", "content": transcription.text})
 
             try:
-                completion = client.chat.completions.create(
+                completion = client1.chat.completions.create(
                     model="llama3-70b-8192",
                     messages=chat_hist,
                     temperature=0.2,
@@ -57,34 +60,22 @@ async def websocket_endpoint(websocket: WebSocket):
                 res = completion.choices[0].message.content
                 chat_hist.append({"role": "assistant", "content": res})
 
-                try:
-                    response = client.audio.speech.create(
-                        model="playai-tts",
-                        voice="Nia-PlayAI",
-                        response_format="wav",
-                        input=res,
-                    )
-                except Exception:
-                    print("first TTS Dead ( -_-') ")
+                clients = [client1, client2, client3, client4, client5, client6]
+                response = None
+
+                for idno, curr_client in enumerate(clients, start=1):
                     try:
-                        response = client2.audio.speech.create(
+                        response = curr_client.audio.speech.create(
                             model="playai-tts",
                             voice="Nia-PlayAI",
                             response_format="wav",
                             input=res,
                         )
-                    except Exception as ded:
-                        print(f"Second TTS Dead ( -_-')")
-                        try:
-                            response = client3.audio.speech.create(
-                                model="playai-tts",
-                                voice="Nia-PlayAI",
-                                response_format="wav",
-                                input=res,
-                            )
-                        except Exception as tts_error:
-                            print(f"Third One died too : {tts_error}")
-                            await websocket.send_text(tts_error)
+                        break
+                    except Exception as e:
+                        print(f"TTS client {idno} failed ( -_-') : {e}")
+                if response is None:
+                    await websocket.send_text("All TTS clients failed.")
 
                 audio_data = b""
                 for chunk in response.iter_bytes():
@@ -100,5 +91,5 @@ async def websocket_endpoint(websocket: WebSocket):
         print("WebSocket got disconnected")
 
 if __name__ == "__main__":
-    import uvicorn
-    uvicorn.run(app, host="0.0.0.0", port=8000)
+    port = int(os.environ.get("PORT", 8000))
+    uvicorn.run(app, host="0.0.0.0", port=port)
