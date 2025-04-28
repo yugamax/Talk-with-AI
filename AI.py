@@ -59,7 +59,6 @@ async def websocket_endpoint(websocket: WebSocket):
                 )
                 res = completion.choices[0].message.content
                 chat_hist.append({"role": "assistant", "content": res})
-                print(f"Assistant: {res}")
 
                 clients = [client1, client2, client3, client4, client5, client6]
                 for i, client in enumerate(clients, 1):
