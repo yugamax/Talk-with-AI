@@ -41,7 +41,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 temp_audio_path = temp_audio.name
 
             with open(temp_audio_path, "rb") as file:
-                transcription = client1.audio.transcriptions.create(
+                transcription = client6.audio.transcriptions.create(
                     file=(temp_audio_path, file.read()),
                     model="whisper-large-v3-turbo",
                     response_format="verbose_json",
@@ -51,7 +51,7 @@ async def websocket_endpoint(websocket: WebSocket):
             chat_hist.append({"role": "user", "content": transcription.text})
 
             try:
-                completion = client1.chat.completions.create(
+                completion = client6.chat.completions.create(
                     model="llama3-70b-8192",
                     messages=chat_hist,
                     temperature=0.2,
@@ -59,63 +59,24 @@ async def websocket_endpoint(websocket: WebSocket):
                 )
                 res = completion.choices[0].message.content
                 chat_hist.append({"role": "assistant", "content": res})
+                print(f"Assistant: {res}")
 
-                try:
-                    response = client1.audio.speech.create(
-                        model="playai-tts",
-                        voice="Nia-PlayAI",
-                        response_format="wav",
-                        input=res,
-                    )
-                except Exception:
-                    print("first TTS Dead ( -_- ) ")
+                clients = [client1, client2, client3, client4, client5, client6]
+                for i, client in enumerate(clients, 1):
                     try:
-                        response = client2.audio.speech.create(
-                            model="playai-tts",
-                            voice="Nia-PlayAI",
-                            response_format="wav",
-                            input=res,
-                        )
-                    except Exception as ded:
-                        print(f"Second TTS Dead ( -_-')")
-                        try:
-                            response = client3.audio.speech.create(
-                                model="playai-tts",
-                                voice="Nia-PlayAI",
-                                response_format="wav",
-                                input=res,
-                            )
-                        except Exception as ded3:
-                            print(f"Third One died too ( =_=') : {ded3}")
-                            try:
-                                response = client4.audio.speech.create(
-                                    model="playai-tts",
-                                    voice="Nia-PlayAI",
-                                    response_format="wav",
-                                    input=res,
-                                )
-                            except Exception as ded4:
-                                print(f"Fourth One died too ( >_<'): {ded4}")
-                                try:
-                                    response = client5.audio.speech.create(
-                                        model="playai-tts",
-                                        voice="Nia-PlayAI",
-                                        response_format="wav",
-                                        input=res,
-                                    )
-                                except Exception as ded5:
-                                    print(f"Fifth One died too ( O_O'): {ded5}")
-                                    try:
-                                        response = client6.audio.speech.create(
+                        print(f"Handling client {i} and it's id :{client}")
+                        response = client6.audio.speech.create(
                                             model="playai-tts",
                                             voice="Nia-PlayAI",
                                             response_format="wav",
                                             input=res,
                                         )
-                                    except Exception as ded6:
-                                        print(f"Sixth One died too ( T-T ): {ded6}")
-                                        await websocket.send_text("All TTS models are currently unavailable. Please try again later.")
-
+                        break
+                    except Exception as e:
+                        print(f"Client {i} failed: {e}")
+                else:
+                    await websocket.send_text("All TTS models unavailable.")
+                    return
                 audio_data = b""
                 for chunk in response.iter_bytes():
                     audio_data += chunk
