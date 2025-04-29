@@ -64,7 +64,7 @@ async def websocket_endpoint(websocket: WebSocket):
                 for i, client in enumerate(clients, 1):
                     try:
                         print(f"Handling client {i} and it's id :{client}")
-                        response = client6.audio.speech.create(
+                        response = client.audio.speech.create(
                                             model="playai-tts",
                                             voice="Nia-PlayAI",
                                             response_format="wav",
