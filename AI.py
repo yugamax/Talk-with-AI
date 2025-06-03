@@ -52,7 +52,7 @@ async def websocket_endpoint(websocket: WebSocket):
 
             try:
                 completion = client6.chat.completions.create(
-                    model="llama3-70b-8192",
+                    model="llama-3.3-70b-versatile",
                     messages=chat_hist,
                     temperature=0.2,
                     max_tokens=256,
@@ -68,7 +68,7 @@ async def websocket_endpoint(websocket: WebSocket):
                                             model="playai-tts",
                                             voice="Nia-PlayAI",
                                             response_format="wav",
-                                            input=res,
+                                            input=res
                                         )
                         break
                     except Exception as e:
